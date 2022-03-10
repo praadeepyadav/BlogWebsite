@@ -1,0 +1,83 @@
+//jshint esversion:6
+
+const express = require("express");
+const bodyParser = require("body-parser");
+const ejs = require("ejs");
+const mongoose = require('mongoose');
+
+const homeStartingContent = "Welcome to our vlogging channel, where You can share your thoughts and activities about your day.";
+const aboutContent = "A vlog is a type of content that documents an individual’s life, experiences, and ideas.It’s basically just the type of content that one would otherwise cover in a blog post. With vlogging audiences being more visual, vlogs tend to resonate with the modern web user because there’s little to no reading involved and you don’t really need to focus your entire attention on the material—as opposed to reading a blog article where you have to skim the page and read the text content to get a gist of the message it conveys.";
+const contactContent = "";
+
+
+
+const app = express();
+
+app.set('view engine', 'ejs');
+
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(express.static("public"));
+
+mongoose.connect("mongodb://localhost:27017/blogDB", {useNewUrlParser: true});
+
+const postSchema = {
+  title: String,
+  content: String
+};
+
+const Post = mongoose.model("Post", postSchema);
+
+app.get("/", function(req, res){
+
+  Post.find({}, function(err, posts){
+    res.render("home", {
+      startingContent: homeStartingContent,
+      posts: posts
+      });
+  });
+});
+
+app.get("/compose", function(req, res){
+  res.render("compose");
+});
+
+app.post("/compose", function(req, res){
+  const post = new Post({
+    title: req.body.postTitle,
+    content: req.body.postBody
+  });
+
+
+  post.save(function(err){
+    if (!err){
+        res.redirect("/");
+    }
+  });
+});
+
+app.get("/posts/:postId", function(req, res){
+
+const requestedPostId = req.params.postId;
+
+  Post.findOne({_id: requestedPostId}, function(err, post){
+    res.render("post", {
+      title: post.title,
+      content: post.content
+    });
+  });
+
+});
+
+app.get("/about", function(req, res){
+  res.render("about", {aboutContent: aboutContent});
+});
+
+app.get("/contact", function(req, res){
+  // res.render("contact", {contactContent: contactContent});
+  res.redirect("https://praadeepyadav.github.io/PersonalWebsite/");
+});
+
+
+app.listen(3000, function() {
+  console.log("Server started on port 3000");
+});
